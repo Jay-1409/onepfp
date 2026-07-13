@@ -1,5 +1,6 @@
 const getDbConnection = require('../utils/db');
 const { hashPassword, verifyPassword } = require('../utils/user')();
+const jwtUtil = require('../utils/jwt');
 
 const UserRoutes = (express) => {
     const router = express.Router();
@@ -73,7 +74,8 @@ const UserRoutes = (express) => {
                 return res.status(401).json({ error: "Invalid credentials" });
             }
 
-            return res.status(200).json({ message: "Login successful", user_id });
+            const token = jwtUtil.signToken({ user_id });
+            return res.status(200).json({ message: "Login successful", user_id, token });
         } catch (err) {
             console.error("Login error:", err);
             return res.status(500).json({ error: "Internal server error" });

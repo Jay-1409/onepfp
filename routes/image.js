@@ -10,28 +10,23 @@ const imageRoutes = (express) => {
      */
     function getPreSignedS3URL(s3Key) {
         const s3 = new AWS.S3();
-
         const params = {
             Bucket: process.env.S3_BUCKET,
             Key: s3Key,
             Expires: 60 * 5,
             ContentType: "image/jpeg"
         };
-
         return s3.getSignedUrl("putObject", params);
     }
 
     router.post("/upload", (req, res) => {
         const s3Key = req.body.s3Key;
-
         if (!s3Key) {
             return res.status(400).json({
                 error: "s3Key is required"
             });
         }
-
         const presignedUrl = getPreSignedS3URL(s3Key);
-
         res.json({ presignedUrl });
     });
 
