@@ -1,29 +1,5 @@
-const crypto = require('crypto');
 const getDbConnection = require('../utils/db');
-
-// Helper to securely hash a password using scrypt
-function hashPassword(password) {
-    return new Promise((resolve, reject) => {
-        const salt = crypto.randomBytes(16).toString('hex');
-        crypto.scrypt(password, salt, 64, (err, derivedKey) => {
-            if (err) return reject(err);
-            resolve(salt + ":" + derivedKey.toString('hex'));
-        });
-    });
-}
-
-// Helper to verify a password against a stored hash
-function verifyPassword(password, hash) {
-    return new Promise((resolve, reject) => {
-        const parts = hash.split(':');
-        if (parts.length !== 2) return resolve(false);
-        const [salt, key] = parts;
-        crypto.scrypt(password, salt, 64, (err, derivedKey) => {
-            if (err) return reject(err);
-            resolve(derivedKey.toString('hex') === key);
-        });
-    });
-}
+const { hashPassword, verifyPassword } = require('../utils/user')();
 
 const UserRoutes = (express) => {
     const router = express.Router();
