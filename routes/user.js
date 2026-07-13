@@ -1,6 +1,8 @@
 const oracledb = require("oracledb");
+
 oracledb.autoCommit = true;
-export const DB = async () => {
+
+const DB = async () => {
     try {
         const connection = await oracledb.getConnection({
             user: process.env.ORACLE_USERNAME,
@@ -14,3 +16,5 @@ export const DB = async () => {
         throw err;
     }
 };
+
+module.exports = DB;
