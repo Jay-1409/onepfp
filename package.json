@@ -1,0 +1,11 @@
+{
+  "name": "onepfp",
+  "version": "1.0.0",
+  "description": "one pfp for all locations",
+  "main": "server.js",
+  "scripts": {
+    "test": "run"
+  },
+  "author": "Jay 'Jay-1409' Shah",
+  "license": "ISC"
+}
