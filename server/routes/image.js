@@ -1,4 +1,4 @@
-export const userRoutes = (express)=>{
+export const imageRoutes = (express)=>{
     const router = express.Router();
     /**
      * @breif The user asks for a pre signed AWS URL from the backend service.
