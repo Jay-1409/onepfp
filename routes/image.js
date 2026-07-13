@@ -15,7 +15,7 @@ const imageRoutes = (express) => {
             Key: s3Key,
             ContentType: "image/jpeg"
         });
-        return await getSignedUrl(s3Client, command, { expiresIn: 300 });
+        return await getSignedUrl(s3Client, command, { expiresIn: process.env.AWS_S3_UPLOAD_WINDOW_SECONDS || 300 });
     }
     /**
      * @brief POST endpoint to obtain pre-signed S3 upload URL.
