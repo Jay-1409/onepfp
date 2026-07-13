@@ -1,25 +1,26 @@
-const AWS = require("aws-sdk");
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const jwtUtil = require('../utils/jwt');
+const s3Client = new S3Client({});
 const imageRoutes = (express) => {
     const router = express.Router();
-
     /**
      * @brief The user asks for a pre-signed AWS URL from the backend service.
      * @param {string} s3Key Contains the User_ID / Session_id / Image_id for that user.
-     * @returns {string} Pre-signed S3 upload URL
+     * @returns {Promise<string>} Pre-signed S3 upload URL
      */
-    function getPreSignedS3URL(s3Key) {
-        const s3 = new AWS.S3();
-        const params = {
+    async function getPreSignedS3URL(s3Key) {
+        const command = new PutObjectCommand({
             Bucket: process.env.S3_BUCKET,
             Key: s3Key,
-            Expires: 60 * 5,
             ContentType: "image/jpeg"
-        };
-        return s3.getSignedUrl("putObject", params);
+        });
+        return await getSignedUrl(s3Client, command, { expiresIn: 300 });
     }
-
-    router.post("/upload", (req, res) => {
+    /**
+     * @brief POST endpoint to obtain pre-signed S3 upload URL.
+     */
+    router.post("/upload", async (req, res) => {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) {
             return res.status(401).json({
@@ -37,11 +38,14 @@ const imageRoutes = (express) => {
                 error: "s3Key is required"
             });
         }
-        const presignedUrl = getPreSignedS3URL(s3Key);
-        res.json({ presignedUrl });
+        try {
+            const presignedUrl = await getPreSignedS3URL(s3Key);
+            return res.json({ presignedUrl });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Failed to generate upload URL" });
+        }
     });
-
     return router;
 };
-
 module.exports = imageRoutes;

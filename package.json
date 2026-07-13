@@ -9,7 +9,8 @@
   "author": "Jay 'Jay-1409' Shah",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.1693.0",
+    "@aws-sdk/client-s3": "^3.1085.0",
+    "@aws-sdk/s3-request-presigner": "^3.1085.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "node-cache": "^5.1.2"
