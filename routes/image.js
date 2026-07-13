@@ -1,5 +1,5 @@
 const AWS = require("aws-sdk");
-
+const jwtUtil = require('../utils/jwt');
 const imageRoutes = (express) => {
     const router = express.Router();
 
@@ -20,6 +20,17 @@ const imageRoutes = (express) => {
     }
 
     router.post("/upload", (req, res) => {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({
+                error: "Unauthorized"
+            });
+        }
+        if (!jwtUtil.verifyToken(token)) {
+            return res.status(401).json({
+                error: "Unauthorized"
+            });
+        }
         const s3Key = req.body.s3Key;
         if (!s3Key) {
             return res.status(400).json({

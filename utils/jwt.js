@@ -8,7 +8,7 @@ const jwtUtil = {
      * @returns {string} The signed JWT token
      */
     signToken: (payload, expiresIn = '24h') => {
-        const secret = process.env.JWT_SECRET || 'fallback-secret-key';
+        const secret = process.env.JWT_SECRET || 'fallback-secret-dont';
         return jwt.sign(payload, secret, { expiresIn });
     },
 

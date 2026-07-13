@@ -18,3 +18,9 @@
 ### 4. API Testing
 * All endpoints must have corresponding request files (`.bru`) maintained inside the [bruno/](file:///Users/jay/Desktop/Personal%20Projects/onepfp/bruno) folder.
 * Variables like `baseUrl` must be referenced using environment config files in [bruno/environments/config.bru](file:///Users/jay/Desktop/Personal%20Projects/onepfp/bruno/environments/config.bru) or [bruno/config.bru](file:///Users/jay/Desktop/Personal%20Projects/onepfp/bruno/config.bru).
+
+
+### 5. Writing API
+* Properly document each end point using the annotations on top of each api 
+* avoid using uncessary empty lines
+* avoid commenting inside the function scope
