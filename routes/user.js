@@ -90,7 +90,7 @@ const UserRoutes = (express) => {
                 return res.status(401).json({ error: "Invalid credentials" });
             }
 
-            const storedHash = result.rows[0][0]; // password is the first column
+            const storedHash = result.rows[0][0];
             const isValid = await verifyPassword(password, storedHash);
 
             if (!isValid) {
