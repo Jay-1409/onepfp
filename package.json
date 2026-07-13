@@ -7,5 +7,10 @@
     "test": "run"
   },
   "author": "Jay 'Jay-1409' Shah",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.1693.0",
+    "express": "^5.2.1",
+    "node-cache": "^5.1.2"
+  }
 }
