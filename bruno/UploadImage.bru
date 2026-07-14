@@ -14,6 +14,10 @@ headers {
   Content-Type: image/jpeg
 }
 
+body:file {
+  file: @file()
+}
+
 vars:pre-request {
-  presignedUrl: https://onepfp-bkt.s3.ap-south-1.amazonaws.com/testuser/0072a13c81e726f485b2f461da0fbaad/3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIATDIUEVWCHIBXHOT4%2F20260714%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20260714T164922Z&X-Amz-Expires=300&X-Amz-Signature=69efb94260f87a7af49988c994fecf76728460c8299bfeb44d229942445702dd&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject
+  presignedUrl: https://onepfp-bkt.s3.ap-south-1.amazonaws.com/testuser/0072a13c81e726f485b2f461da0fbaad/4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIATDIUEVWCHIBXHOT4%2F20260714%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20260714T170300Z&X-Amz-Expires=300&X-Amz-Signature=90ef22ba3e9aab60202a45da031b22aa4066c9a97adfb6a435b5bc08b86e613d&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject
 }
