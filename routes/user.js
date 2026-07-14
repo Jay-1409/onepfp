@@ -69,9 +69,20 @@ const UserRoutes = (express) => {
 
             const storedHash = result.rows[0][0];
             const isValid = await verifyPassword(password, storedHash);
-            const session_id = crypto.randomBytes(16).toString("hex");
             if (!isValid) {
                 return res.status(401).json({ error: "Invalid credentials" });
+            }
+            const session_id = crypto.randomBytes(16).toString("hex");
+            try {
+                await connection.execute(
+                    `Insert into sessions values (
+                        :1, 
+                        :2
+                    )`,
+                    [user_id, session_id]
+                );
+            } catch (error) {
+                return res.status(500).json({ error: `Error in inserting session details into the table: ${error.message}` });
             }
             const token = jwtUtil.signToken({ user_id, session_id });
             return res.status(200).json({ message: "Login successful", user_id, token });
