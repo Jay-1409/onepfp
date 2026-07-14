@@ -59,7 +59,7 @@ const imageRoutes = (express) => {
                 error: "Not all fields required for constructing the S3Key availiable, missing image_id"
             });
         }
-        const s3Key = user_id + session_id + image_id;
+        const s3Key = `${user_id}/${session_id}/${image_id}`;
         console.log("S3Key: ", s3Key);
         let connection;
         try {

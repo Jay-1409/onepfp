@@ -5,12 +5,14 @@
   "main": "server.js",
   "scripts": {
     "test": "run",
-    "db:dump": "node scripts/dump-schema.cjs"
+    "db:dump": "node scripts/dump-schema.cjs",
+    "worker": "node worker/worker.js"
   },
   "author": "Jay 'Jay-1409' Shah",
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1085.0",
+    "@aws-sdk/client-sqs": "^3.1086.0",
     "@aws-sdk/s3-request-presigner": "^3.1085.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",

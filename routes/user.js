@@ -27,7 +27,6 @@ const UserRoutes = (express) => {
             return res.status(201).json({ message: "User created successfully" });
         } catch (err) {
             console.error("Signup error:", err);
-            // Oracle unique constraint violation code is ORA-00001
             if (err.message && err.message.includes("ORA-00001")) {
                 return res.status(409).json({ error: "User already exists" });
             }
