@@ -4,7 +4,8 @@
   "description": "one pfp for all locations",
   "main": "server.js",
   "scripts": {
-    "test": "run"
+    "test": "run",
+    "db:dump": "node scripts/dump-schema.cjs"
   },
   "author": "Jay 'Jay-1409' Shah",
   "license": "ISC",
