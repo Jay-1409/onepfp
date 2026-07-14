@@ -1,4 +1,5 @@
-process.loadEnvFile();
+const path = require("path");
+process.loadEnvFile(path.resolve(__dirname, "../.env"));
 const { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } = require("@aws-sdk/client-sqs");
 const getDbConnection = require("../utils/db");
 const sqsClient = new SQSClient({
