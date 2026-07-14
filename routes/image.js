@@ -2,6 +2,7 @@ const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const jwtUtil = require('../utils/jwt');
 const s3Client = new S3Client({});
+const getDbConnection = require('../utils/db');
 const imageRoutes = (express) => {
     const router = express.Router();
     /**
@@ -27,23 +28,71 @@ const imageRoutes = (express) => {
                 error: "Unauthorized"
             });
         }
-        if (!jwtUtil.verifyToken(token)) {
+        let decoded;
+        try {
+            decoded = jwtUtil.verifyToken(token);
+        } catch (err) {
             return res.status(401).json({
                 error: "Unauthorized"
             });
         }
-        const s3Key = req.body.s3Key;
-        if (!s3Key) {
-            return res.status(400).json({
-                error: "s3Key is required"
+        if (!decoded) {
+            return res.status(401).json({
+                error: "Unauthorized"
             });
         }
+        const user_id = decoded.user_id;
+        if(!user_id) {
+          return res.status(400).json({
+                error: "Not all fields required for constructing the S3Key availiable, missing user_id"
+            });
+        }
+        const session_id = decoded.session_id;
+        if(!session_id) {
+          return res.status(400).json({
+                error: "Not all fields required for constructing the S3Key availiable, missing session_id"
+            });
+        }
+        const image_id = req.body.image_id;
+        if(!image_id) {
+          return res.status(400).json({
+                error: "Not all fields required for constructing the S3Key availiable, missing image_id"
+            });
+        }
+        const s3Key = user_id + session_id + image_id;
+        console.log("S3Key: ", s3Key);
+        let connection;
         try {
             const presignedUrl = await getPreSignedS3URL(s3Key);
-            return res.json({ presignedUrl });
+            try {
+                connection = await getDbConnection();
+                await connection.execute(
+                    `INSERT INTO images (image_id, user_id, session_id, status)
+                    VALUES (:image_id, :user_id, :session_id, :status)`,
+                    {
+                        image_id,
+                        user_id,
+                        session_id,
+                        status: "pending"
+                    },
+                    { autoCommit: true }
+                );
+                console.log("Entry inserted in database");
+                return res.json({ presignedUrl });
+            } catch(err ) {
+                return res.status(500).json({error : `Failed to insert entry in database: ${err.message}`});
+            } finally {
+                if (connection) {
+                    try {
+                        await connection.close();
+                    } catch (closeErr) {
+                        console.error("Error closing database connection:", closeErr);
+                    }
+                }
+            }
         } catch (err) {
             console.error(err);
-            return res.status(500).json({ error: "Failed to generate upload URL" });
+            return res.status(500).json({ error: `Failed to generate upload URL: ${err.message}` });
         }
     });
     return router;
