@@ -5,6 +5,11 @@ const sqsClient = new SQSClient({
     region: process.env.AWS_REGION
 });
 const queueUrl = process.env.SQS_QUEUE_URL;
+/**
+ * @brief Processes an S3 record by extracting the user ID, session ID, and image ID from the key,
+ * and updates the corresponding record's status to "completed" in the Oracle database.
+ * @param {object} record The S3 record object containing the object key.
+ */
 async function processS3Record(record) {
     const s3Key = decodeURIComponent(record.s3.object.key.replace(/\+/g, " "));
     console.log(`Processing S3 key: ${s3Key}`);
@@ -47,6 +52,11 @@ async function processS3Record(record) {
         }
     }
 }
+/**
+ * @brief Parses an SQS message body for S3 events and processes the records, 
+ * then deletes the message from the queue on successful processing.
+ * @param {object} message The SQS message object.
+ */
 async function handleMessage(message) {
     try {
         const body = JSON.parse(message.Body);
@@ -73,6 +83,9 @@ async function handleMessage(message) {
         console.error(`Failed to process message ${message.MessageId}:`, err.message);
     }
 }
+/**
+ * @brief Starts the infinite polling loop for the SQS queue, pulling up to 10 messages at a time.
+ */
 async function startWorker() {
     if (!queueUrl) {
         console.error("SQS_QUEUE_URL is not defined in the environment.");

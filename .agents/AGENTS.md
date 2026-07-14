@@ -22,5 +22,6 @@
 
 ### 5. Writing API
 * Properly document each end point using the annotations on top of each api 
+* Properly document each function/method in worker/utility files using JSDoc-style block comments on top of each function
 * avoid using uncessary empty lines
 * avoid commenting inside the function scope
