@@ -1,0 +1,19 @@
+meta {
+  name: Upload Image
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{presignedUrl}}
+  body: file
+  auth: none
+}
+
+headers {
+  Content-Type: image/jpeg
+}
+
+vars:pre-request {
+  presignedUrl: https://onepfp-bkt.s3.ap-south-1.amazonaws.com/testuser/0072a13c81e726f485b2f461da0fbaad/3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIATDIUEVWCHIBXHOT4%2F20260714%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20260714T164922Z&X-Amz-Expires=300&X-Amz-Signature=69efb94260f87a7af49988c994fecf76728460c8299bfeb44d229942445702dd&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject
+}

@@ -19,3 +19,13 @@ body:json {
     "image_id": "test-avatar.jpg"
   }
 }
+
+script:post-response {
+  if (res.status === 200) {
+    const data = res.getBody();
+    if (data && data.presignedUrl) {
+      bru.setVar("presignedUrl", data.presignedUrl);
+    }
+  }
+}
+
