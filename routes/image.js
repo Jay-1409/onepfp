@@ -124,20 +124,20 @@ const imageRoutes = (express) => {
             });
         }
         const user_id = decoded.user_id;
-        if(!user_id) {
-          return res.status(400).json({
+        if (!user_id) {
+            return res.status(400).json({
                 error: "Not all fields required for constructing the S3Key availiable, missing user_id"
             });
         }
         const session_id = decoded.session_id;
-        if(!session_id) {
-          return res.status(400).json({
+        if (!session_id) {
+            return res.status(400).json({
                 error: "Not all fields required for constructing the S3Key availiable, missing session_id"
             });
         }
         const image_id = req.body.image_id;
-        if(!image_id) {
-          return res.status(400).json({
+        if (!image_id) {
+            return res.status(400).json({
                 error: "Not all fields required for constructing the S3Key availiable, missing image_id"
             });
         }
@@ -161,8 +161,8 @@ const imageRoutes = (express) => {
                 );
                 console.log("Entry inserted in database");
                 return res.json({ presignedUrl });
-            } catch(err ) {
-                return res.status(500).json({error : `Failed to insert entry in database: ${err.message}`});
+            } catch (err) {
+                return res.status(500).json({ error: `Failed to insert entry in database: ${err.message}` });
             } finally {
                 if (connection) {
                     try {
