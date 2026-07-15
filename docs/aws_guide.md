@@ -1,121 +1,228 @@
-# S3 to SQS Event Notification Setup Guide
+# AWS S3 and SQS Setup Guide
 
-This guide explains how to connect an **Amazon S3 bucket** to an **Amazon SQS queue** so that whenever a file is uploaded to S3, S3 sends an event message to SQS.
+This guide sets up the AWS side of `onepfp`: direct image uploads to S3 and asynchronous upload-completion events through SQS.
 
-This is useful for systems like image upload pipelines, background workers, processing queues, and async database updates.
-
----
-
-## Architecture
+The app signs upload URLs for this S3 object key:
 
 ```text
-Client uploads file
-        ↓
-Amazon S3 bucket
-        ↓
-S3 ObjectCreated event
-        ↓
-Amazon SQS queue
-        ↓
-Worker service
-        ↓
-Database / processing logic
+{user_id}/{session_id}/{image_id}
 ```
-
-Example use case:
-
-```text
-User uploads profile picture → S3 sends event → SQS stores message → Worker updates DB
-```
-
----
-
-## 1. Create an SQS Queue
-
-Go to:
-
-```text
-AWS Console → SQS → Create queue
-```
-
-Choose:
-
-```text
-Queue type: Standard
-Name: onepfp
-```
-
-> Direct S3 event notifications work with **Standard SQS queues**.  
-> Do not use a FIFO queue like `onepfp.fifo` unless you are using EventBridge in between.
-
-Recommended basic settings:
-
-```text
-Visibility timeout: 60 seconds
-Message retention period: 4 days
-Receive message wait time: 20 seconds
-Maximum message size: 256 KB
-Delivery delay: 0 seconds
-```
-
-For a worker-based system, long polling is recommended:
-
-```text
-Receive message wait time: 20 seconds
-```
-
----
-
-## 2. Get the SQS Queue ARN
-
-Open your queue:
-
-```text
-SQS → your queue → Details
-```
-
-Copy the ARN.
 
 Example:
 
 ```text
-arn:aws:sqs:ap-south-1:213180001668:onepfp
+testuser/0072a13c81e726f485b2f461da0fbaad/avatar.jpg
 ```
 
-You will need this ARN in the SQS access policy.
+Keep that key format in mind when choosing S3 event prefixes. For the current app, the easiest correct setup is to leave the event prefix empty.
 
 ---
 
-## 3. Add SQS Access Policy for S3
+## Flow
 
-S3 needs permission to send messages into your SQS queue.
+```text
+Client requests upload URL
+        ↓
+Express API inserts an images row with status=pending
+        ↓
+Client uploads directly to S3 with the presigned URL
+        ↓
+S3 publishes an ObjectCreated event to SQS
+        ↓
+Worker polls SQS and parses the object key
+        ↓
+Worker updates the matching images row to status=completed
+        ↓
+Worker deletes the SQS message
+```
+
+AWS notes verified against the Amazon S3 documentation:
+
+- S3 event notifications can publish new-object events to SQS.
+- S3 event notifications are delivered at least once, so worker processing should be idempotent.
+- Direct S3 event notifications do not support SQS FIFO queues. Use a Standard queue, or use EventBridge if you need FIFO.
+- S3 must be allowed to call `SQS:SendMessage` on the destination queue.
+- If the SQS queue uses a customer-managed KMS key, the key policy must also allow the S3 service principal.
+
+---
+
+## 1. Choose Names and Region
+
+Pick these values first so every policy uses the same names:
+
+```text
+AWS account ID: 123456789012
+AWS region: ap-south-1
+S3 bucket name: onepfp-bkt
+SQS queue name: onepfp-upload-events
+```
+
+Use one AWS region for both S3 and SQS. The examples below use `ap-south-1`.
+
+---
+
+## 2. Create the S3 Bucket
 
 Go to:
 
 ```text
-SQS → your queue → Access policy → Edit
+AWS Console -> S3 -> Create bucket
 ```
 
-Use this policy:
+Use:
+
+```text
+Bucket name: onepfp-bkt
+AWS Region: ap-south-1
+Object Ownership: ACLs disabled / Bucket owner enforced
+Block Public Access: keep enabled unless you intentionally serve images directly from public S3 URLs
+```
+
+The app redirects active image requests to either:
+
+```text
+CDN_URL/{user_id}/{session_id}/{image_id}
+```
+
+or, if `CDN_URL` is not set:
+
+```text
+https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{user_id}/{session_id}/{image_id}
+```
+
+For production, prefer a CDN or another controlled serving layer. If you use direct public S3 URLs for a small demo, you must intentionally allow public read access in the bucket policy and ensure Block Public Access is not blocking that policy.
+
+### Optional Public Read Policy
+
+Use this only if you want direct public S3 object URLs to work:
 
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowS3ToSendMessage",
+      "Sid": "PublicReadProfileImages",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::onepfp-bkt/*"
+    }
+  ]
+}
+```
+
+Replace `onepfp-bkt` with your bucket name.
+
+---
+
+## 3. Configure S3 CORS
+
+If uploads come from a browser or Bruno-like client, configure bucket CORS.
+
+Go to:
+
+```text
+S3 -> bucket -> Permissions -> Cross-origin resource sharing (CORS)
+```
+
+For local development:
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["PUT", "POST", "GET", "HEAD"],
+    "AllowedOrigins": ["http://localhost:9991"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+
+If a separate frontend uploads the file, replace `http://localhost:9991` with that frontend origin, for example `http://localhost:5173`.
+
+For quick testing only, you can allow all origins:
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["PUT", "POST", "GET", "HEAD"],
+    "AllowedOrigins": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+
+---
+
+## 4. Create a Standard SQS Queue
+
+Go to:
+
+```text
+AWS Console -> SQS -> Create queue
+```
+
+Use:
+
+```text
+Queue type: Standard
+Name: onepfp-upload-events
+Visibility timeout: 60 seconds
+Message retention period: 4 days
+Receive message wait time: 20 seconds
+```
+
+Do not choose a FIFO queue for direct S3 event notifications.
+
+After creating the queue, copy:
+
+```text
+Queue URL
+Queue ARN
+```
+
+Example:
+
+```text
+Queue URL: https://sqs.ap-south-1.amazonaws.com/123456789012/onepfp-upload-events
+Queue ARN: arn:aws:sqs:ap-south-1:123456789012:onepfp-upload-events
+```
+
+---
+
+## 5. Allow S3 to Send Messages to SQS
+
+Now that both the bucket and queue exist, add the queue policy.
+
+Go to:
+
+```text
+SQS -> queue -> Access policy -> Edit
+```
+
+Use:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowS3ObjectCreatedEvents",
       "Effect": "Allow",
       "Principal": {
         "Service": "s3.amazonaws.com"
       },
-      "Action": "sqs:SendMessage",
-      "Resource": "arn:aws:sqs:ap-south-1:213180001668:onepfp",
+      "Action": "SQS:SendMessage",
+      "Resource": "arn:aws:sqs:ap-south-1:123456789012:onepfp-upload-events",
       "Condition": {
-        "StringEquals": {
-          "aws:SourceAccount": "213180001668"
-        },
         "ArnLike": {
           "aws:SourceArn": "arn:aws:s3:::onepfp-bkt"
+        },
+        "StringEquals": {
+          "aws:SourceAccount": "123456789012"
         }
       }
     }
@@ -123,429 +230,179 @@ Use this policy:
 }
 ```
 
-Replace these values:
+Replace:
 
 ```text
-213180001668        → your AWS account ID
-ap-south-1          → your AWS region
-onepfp              → your SQS queue name
-onepfp-bkt          → your S3 bucket name
+123456789012          -> your AWS account ID
+ap-south-1            -> your AWS region
+onepfp-upload-events  -> your SQS queue name
+onepfp-bkt            -> your S3 bucket name
 ```
 
-Important:
+Important details:
 
-```text
-Resource must be the SQS queue ARN, not the SQS URL.
-```
-
-Correct:
-
-```text
-arn:aws:sqs:ap-south-1:213180001668:onepfp
-```
-
-Wrong:
-
-```text
-https://sqs.ap-south-1.amazonaws.com/213180001668/onepfp
-```
+- `Resource` must be the SQS queue ARN, not the SQS queue URL.
+- `aws:SourceArn` must be the S3 bucket ARN, not an object ARN with `/*`.
+- If S3 reports that it cannot validate the destination, this policy is the first thing to re-check.
 
 ---
 
-## 4. Create an S3 Bucket
+## 6. Add the S3 Event Notification
 
 Go to:
 
 ```text
-AWS Console → S3 → Create bucket
+S3 -> bucket -> Properties -> Event notifications -> Create event notification
 ```
 
-Example bucket name:
+Use:
 
 ```text
-onepfp-bkt
-```
-
-Make sure the S3 bucket and SQS queue are in the **same AWS region**.
-
-Example:
-
-```text
-S3 bucket region: ap-south-1
-SQS queue region: ap-south-1
-```
-
-### Enable Public Read Access & CORS Configurations
-
-To allow profile pictures to be uploaded directly from the browser (CORS) and publicly readable via their S3 key URLs:
-
-1. **Disable "Block public access":**
-   - In S3, select your bucket.
-   - Go to the **Permissions** tab.
-   - Under **Block public access (bucket settings)**, click **Edit**.
-   - **Uncheck all blocks** (turn off Block all public access and all individual block public access settings):
-     - [ ] **Block all public access**
-     - [ ] **Block public access to buckets and objects granted through new access control lists (ACLs)**
-     - [ ] **Block public access to buckets and objects granted through any access control lists (ACLs)**
-     - [ ] **Block public access to buckets and objects granted through new public bucket or access point policies**
-     - [ ] **Block public and cross-account access to buckets and objects through any public bucket or access point policies**
-   - Click **Save changes**.
-
-2. **Add a Bucket Policy:**
-   - Scroll down to **Bucket policy** and click **Edit**.
-   - Paste the following policy:
-     ```json
-     {
-         "Version": "2012-10-17",
-         "Statement": [
-             {
-                 "Sid": "PublicReadGetObject",
-                 "Effect": "Allow",
-                 "Principal": "*",
-                 "Action": "s3:GetObject",
-                 "Resource": "arn:aws:s3:::onepfp-bkt/*"
-             }
-         ]
-     }
-     ```
-     *(Note: Replace `onepfp-bkt` with your actual bucket name.)*
-   - Click **Save changes**.
-
-3. **Configure CORS (Cross-Origin Resource Sharing):**
-   - Scroll to the bottom of the **Permissions** tab to the **Cross-origin resource sharing (CORS)** section and click **Edit**.
-   - Paste the following JSON rules array to allow PUT/POST file uploads from client applications:
-     ```json
-     [
-         {
-             "AllowedHeaders": [
-                 "*"
-             ],
-             "AllowedMethods": [
-                 "GET",
-                 "PUT",
-                 "POST",
-                 "HEAD"
-             ],
-             "AllowedOrigins": [
-                 "*"
-             ],
-             "ExposeHeaders": [],
-             "MaxAgeSeconds": 3000
-         }
-     ]
-     ```
-   - Click **Save changes**.
-
----
-
-## 5. Add S3 Event Notification
-
-Go to:
-
-```text
-S3 → your bucket → Properties → Event notifications → Create event notification
-```
-
-Use these values:
-
-```text
-Event name: image-uploaded-to-sqs
-Prefix: images/
-Suffix: optional
+Event name: onepfp-object-created
 Event types: All object create events
 Destination: SQS queue
-SQS queue: onepfp
+SQS queue: onepfp-upload-events
+Prefix: leave empty
+Suffix: leave empty, or use .jpg only if every upload uses that suffix
 ```
 
-For an image-upload project, this is usually enough:
+Why leave the prefix empty? The app uploads keys like:
 
 ```text
-Event type: s3:ObjectCreated:*
-Prefix: images/
-Destination: SQS queue
+testuser/0072a13c81e726f485b2f461da0fbaad/avatar.jpg
 ```
 
-The prefix means only objects uploaded under this path will trigger the event:
-
-```text
-images/
-```
-
-Example object key:
-
-```text
-images/user123/image456.png
-```
+A prefix such as `images/` would not match the current app and the worker would never receive upload events.
 
 ---
 
-## 6. Test the Connection
+## 7. Configure `.env`
 
-Upload a file to the bucket under the configured prefix.
-
-Example:
-
-```text
-images/test-user/test-image.png
-```
-
-Then go to:
-
-```text
-SQS → your queue → Send and receive messages → Poll for messages
-```
-
-You should receive a message with a body similar to this:
-
-```json
-{
-  "Records": [
-    {
-      "eventName": "ObjectCreated:Put",
-      "s3": {
-        "bucket": {
-          "name": "onepfp-bkt"
-        },
-        "object": {
-          "key": "images/test-user/test-image.png",
-          "size": 12345
-        }
-      }
-    }
-  ]
-}
-```
-
----
-
-## 7. Worker Flow
-
-Your backend worker should:
-
-```text
-1. Poll SQS.
-2. Parse the message body.
-3. Extract bucket name and object key.
-4. Update the database or start processing.
-5. Delete the SQS message only after successful processing.
-```
-
-Do not delete the message before your database update succeeds.
-
-If the worker crashes before deleting the message, SQS will make it visible again after the visibility timeout.
-
----
-
-## 8. Example Node.js Worker
-
-Install AWS SDK:
-
-```bash
-npm install @aws-sdk/client-sqs
-```
-
-Example worker:
-
-```js
-import {
-  SQSClient,
-  ReceiveMessageCommand,
-  DeleteMessageCommand,
-} from "@aws-sdk/client-sqs";
-
-const sqs = new SQSClient({ region: "ap-south-1" });
-
-const QUEUE_URL = process.env.SQS_QUEUE_URL;
-
-async function pollQueue() {
-  while (true) {
-    const response = await sqs.send(
-      new ReceiveMessageCommand({
-        QueueUrl: QUEUE_URL,
-        MaxNumberOfMessages: 10,
-        WaitTimeSeconds: 20,
-        VisibilityTimeout: 60,
-      })
-    );
-
-    const messages = response.Messages ?? [];
-
-    for (const message of messages) {
-      try {
-        const body = JSON.parse(message.Body);
-
-        for (const record of body.Records ?? []) {
-          const bucket = record.s3.bucket.name;
-
-          const key = decodeURIComponent(
-            record.s3.object.key.replace(/\+/g, " ")
-          );
-
-          console.log("New S3 upload:", {
-            bucket,
-            key,
-          });
-
-          // Example:
-          // key = images/user123/image456.png
-          //
-          // TODO:
-          // 1. Extract user_id / image_id from key
-          // 2. Update database row
-          // 3. Trigger image processing if needed
-        }
-
-        await sqs.send(
-          new DeleteMessageCommand({
-            QueueUrl: QUEUE_URL,
-            ReceiptHandle: message.ReceiptHandle,
-          })
-        );
-      } catch (error) {
-        console.error("Failed to process SQS message:", error);
-
-        // Do not delete the message here.
-        // It will become visible again after the visibility timeout.
-      }
-    }
-  }
-}
-
-pollQueue().catch(console.error);
-```
-
-Example `.env`:
+Add the AWS values to your project `.env`:
 
 ```env
-SQS_QUEUE_URL=https://sqs.ap-south-1.amazonaws.com/213180001668/onepfp
+S3_BUCKET=onepfp-bkt
 AWS_REGION=ap-south-1
+SQS_QUEUE_URL=https://sqs.ap-south-1.amazonaws.com/123456789012/onepfp-upload-events
+
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 ```
+
+The AWS SDK can also use other credential providers, such as an AWS profile or IAM role. The app only needs credentials that can:
+
+- Generate S3 presigned `PutObject` URLs for the configured bucket.
+- Poll and delete messages from the configured SQS queue.
 
 ---
 
-## 9. Recommended S3 Object Key Format
+## 8. Test the AWS Path
 
-For an image upload system:
+1. Start the API:
 
-```text
-images/{user_id}/{image_id}.{extension}
-```
+   ```bash
+   node server.cjs
+   ```
 
-Example:
+2. Start the worker:
 
-```text
-images/user_123/img_456.png
-```
+   ```bash
+   npm run worker
+   ```
 
-This makes worker-side parsing easy:
+3. Use the Bruno collection or API endpoints:
 
-```text
-images/user_123/img_456.png
-       ↓
-user_id = user_123
-image_id = img_456
-```
+   ```text
+   Signup -> Login -> Get Presigned URL -> Upload Image
+   ```
 
----
+4. Watch the worker logs. A successful upload should produce logs like:
 
-## 10. Common Error: Unable to Validate Destination
+   ```text
+   Processing S3 key: testuser/0072a13c81e726f485b2f461da0fbaad/avatar.jpg
+   Updated database status for key: ...
+   Successfully processed and deleted message: ...
+   ```
 
-Error:
+5. Confirm the database row moved from:
 
-```text
-Unable to validate the following destination configurations
-```
-
-This usually means S3 could not validate the SQS queue as a destination.
-
-Check these:
-
-### Queue ARN typo
-
-Make sure the SQS policy `Resource` matches the actual queue ARN.
-
-Example mistake:
-
-```text
-onpfp
-```
-
-Instead of:
-
-```text
-onepfp
-```
-
-### Bucket ARN typo
-
-Make sure this matches the exact bucket name:
-
-```json
-"aws:SourceArn": "arn:aws:s3:::onepfp-bkt"
-```
-
-### Region mismatch
-
-Both S3 and SQS should be in the same region.
-
-```text
-S3: ap-south-1
-SQS: ap-south-1
-```
-
-### FIFO queue
-
-Direct S3 event notifications do not work with FIFO queues.
-
-Use a Standard queue.
-
-### KMS encryption issue
-
-If the SQS queue uses a customer-managed KMS key, S3 may fail validation unless the KMS key policy allows S3 to use it.
-
-For initial setup, prefer:
-
-```text
-SQS-managed encryption
-```
-
-or disable custom KMS encryption while testing.
+   ```text
+   pending -> completed
+   ```
 
 ---
 
-## 11. Final Checklist
+## 9. Troubleshooting
 
-Before saving the S3 event notification:
+### Unable to validate destination configuration
+
+Check:
 
 ```text
 [ ] SQS queue is Standard, not FIFO
 [ ] S3 bucket and SQS queue are in the same region
-[ ] SQS access policy allows s3.amazonaws.com
+[ ] SQS access policy Principal is s3.amazonaws.com
+[ ] SQS access policy Action is SQS:SendMessage
 [ ] Resource is the exact SQS queue ARN
 [ ] aws:SourceArn is the exact S3 bucket ARN
-[ ] aws:SourceAccount is the correct AWS account ID
-[ ] SQS encryption is not blocking S3
-[ ] S3 event prefix matches uploaded object keys
+[ ] aws:SourceAccount is the bucket owner's AWS account ID
+[ ] Customer-managed KMS keys allow the S3 service principal
 ```
+
+### Worker does not receive messages
+
+Check:
+
+```text
+[ ] The S3 event notification exists on the correct bucket
+[ ] The event type includes ObjectCreated events
+[ ] Prefix/suffix filters match the actual uploaded object key
+[ ] The object was uploaded after the event notification was created
+[ ] SQS queue URL in .env matches the destination queue
+```
+
+For the current app, this key should match the event notification:
+
+```text
+{user_id}/{session_id}/{image_id}
+```
+
+### Image redirects return AccessDenied
+
+The upload completed, but the image is not readable from the URL returned by `GET /images/:user_id`.
+
+Choose one serving approach:
+
+```text
+Option A: Set CDN_URL and serve images through your CDN/origin policy.
+Option B: Allow public S3 reads for demo use.
+Option C: Change the API later to return signed download URLs instead of public redirects.
+```
+
+### Upload fails because of CORS
+
+Check:
+
+```text
+[ ] AllowedOrigins includes the browser app origin
+[ ] AllowedMethods includes PUT
+[ ] AllowedHeaders allows the headers sent by the upload request
+[ ] The upload request uses the same Content-Type that was signed
+```
+
+The current code signs uploads with:
+
+```text
+Content-Type: image/jpeg
+```
+
+Use a JPEG upload while testing unless the code is updated to sign dynamic content types.
 
 ---
 
-## 12. Final Flow for OnePFP / OnePic
+## AWS References
 
-```text
-Client uploads image to S3 using presigned URL
-        ↓
-S3 stores object under images/{user_id}/{image_id}.png
-        ↓
-S3 sends ObjectCreated event to SQS
-        ↓
-Worker polls SQS
-        ↓
-Worker extracts bucket and key
-        ↓
-Worker updates SQL database
-        ↓
-Worker deletes SQS message
-```
-
-This keeps upload handling async and fault-tolerant.
+- [Amazon S3 Event Notifications](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html)
+- [Granting permissions to publish event notification messages to a destination](https://docs.aws.amazon.com/AmazonS3/latest/userguide/grant-destinations-permissions-to-s3.html)
+- [Elements of an S3 CORS configuration](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ManageCorsUsing.html)
+- [Blocking public access to your Amazon S3 storage](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html)

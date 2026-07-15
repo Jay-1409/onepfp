@@ -9,29 +9,52 @@
 ![Queue](https://img.shields.io/badge/queue-AWS_SQS-orange.svg)
 ![License](https://img.shields.io/badge/license-ISC-blue.svg)
 
-## What's in there for you
+## What it does
 
 - **Single Source of Truth:** Set and update your profile picture once, ensuring a consistent look across all of your active locations.
 - **Fast and Efficient Uploads:** Upload your images quickly and directly without lagging the main application servers.
 - **Seamless Integration:** Display your profile picture directly in any application using a simple, unified link.
 
-## Features
+## How it works
 
-- **Instant Multi-Platform Avatar Synchronization:** Enables users to upload profile pictures and have their active avatars updated automatically across all connected locations.
+```text
+Client
+  -> Express API issues a JWT and presigned S3 upload URL
+  -> Client uploads the image directly to S3
+  -> S3 sends an ObjectCreated event to SQS
+  -> Worker consumes the SQS event and marks the image completed
+  -> API redirects /images/:user_id to the active S3 or CDN URL
+```
+
+The S3 object key used by the app is:
+
+```text
+{user_id}/{session_id}/{image_id}
+```
+
+Keep AWS event notification prefixes aligned with that key format.
 
 ## Quick Start Guide
 
-To get the application up and running locally, please follow the detailed steps in the [Quick Start Guide](./docs/quickstart.md) (covers database schema scripts, server startup, background queue workers, and Bruno tests).
+Start with the [Quick Start Guide](./docs/quickstart.md). It walks through the expected setup order:
+
+1. Create the Oracle schema.
+2. Create the S3 bucket.
+3. Create the SQS queue.
+4. Add the SQS destination policy for S3.
+5. Add the S3 event notification.
+6. Configure `.env`.
+7. Run the API server and worker.
 
 ---
 
 ## Documentation Links
 
 - [Quick Start Guide](./docs/quickstart.md)
-- [System Architecture Guide](./docs/architecture.md)
-- [API Endpoints Guide](./docs/endpoints.md)
 - [Configuration & Setup Guide](./docs/configuration.md)
 - [AWS S3 and SQS Event Notification Setup Guide](./docs/aws_guide.md)
+- [API Endpoints Guide](./docs/endpoints.md)
+- [System Architecture Guide](./docs/architecture.md)
 
 ## License
 

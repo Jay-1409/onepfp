@@ -151,6 +151,8 @@ Sets a completed uploaded image as the active profile picture for a user session
 
 - **Path:** `/images/active`
 - **Method:** `POST`
+- **Headers:**
+  - `Authorization: Bearer <JWT_TOKEN>`
 - **Content-Type:** `application/json`
 
 ### Parameters
@@ -165,6 +167,7 @@ Sets a completed uploaded image as the active profile picture for a user session
 
 ```bash
 curl -X POST http://localhost:9991/images/active \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"user_id": "testuser", "session_id": "0072a13c81e726f485b2f461da0fbaad", "image_id": "test-avatar.jpg"}'
 ```
@@ -181,7 +184,7 @@ curl -X POST http://localhost:9991/images/active \
 #### Image Pending Upload (400 Bad Request)
 ```json
 {
-  "error": "Image upload is pending"
+  "error": "Please try again in some while or reupload the image"
 }
 ```
 
@@ -266,6 +269,5 @@ curl -X GET http://localhost:9991/images \
   "error": "Unauthorized, token is required"
 }
 ```
-
 
 
