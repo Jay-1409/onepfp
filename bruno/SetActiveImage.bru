@@ -1,0 +1,23 @@
+meta {
+  name: Set Active Image
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/images/active
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdHVzZXIiLCJpYXQiOjE3ODM5NjI4MjEsImV4cCI6MTc4NDA0OTIyMX0.p-9G_DY65X7VpVRYhM2_hdlsKhvCvRp0MVKJUtD47M4
+}
+
+body:json {
+  {
+    "user_id": "testuser",
+    "session_id": "0072a13c81e726f485b2f461da0fbaad",
+    "image_id": "test-avatar.jpg"
+  }
+}

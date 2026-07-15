@@ -142,3 +142,53 @@ curl -X POST http://localhost:9991/images/upload \
   "error": "Not all fields required for constructing the S3Key available, missing image_id"
 }
 ```
+
+---
+
+## 4. Set Active Image
+
+Sets a completed uploaded image as the active profile picture for a user session, updating the states in `images` and the `active` database tables.
+
+- **Path:** `/images/active`
+- **Method:** `POST`
+- **Content-Type:** `application/json`
+
+### Parameters
+
+| Name | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | String | Yes | Unique user identifier. |
+| `session_id` | String | Yes | ID of the active user session. |
+| `image_id` | String | Yes | ID of the completed image to set as active. |
+
+### Example Request
+
+```bash
+curl -X POST http://localhost:9991/images/active \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "testuser", "session_id": "0072a13c81e726f485b2f461da0fbaad", "image_id": "test-avatar.jpg"}'
+```
+
+### Responses
+
+#### Success (200 OK)
+```json
+{
+  "message": "Image set as active successfully"
+}
+```
+
+#### Image Pending Upload (400 Bad Request)
+```json
+{
+  "error": "Image upload is pending"
+}
+```
+
+#### Image Not Found (404 Not Found)
+```json
+{
+  "error": "Image not found"
+}
+```
+

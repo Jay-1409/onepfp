@@ -95,6 +95,88 @@ const imageRoutes = (express) => {
             return res.status(500).json({ error: `Failed to generate upload URL: ${err.message}` });
         }
     });
+    /**
+     * @brief POST endpoint to set a completed image as the active profile photo.
+     */
+    router.post("/active", async (req, res) => {
+        const { user_id, session_id, image_id } = req.body || {};
+        if (!user_id || !session_id || !image_id) {
+            return res.status(400).json({ error: "user_id, session_id, and image_id are required" });
+        }
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: "Unauthorized, token is required" });
+        }
+        let decoded;
+        try {
+            decoded = jwtUtil.verifyToken(token);
+        } catch (err) {
+            return res.status(401).json({ error: "Unauthorized, invalid token" });
+        }
+        if (!decoded || decoded.user_id !== user_id) {
+            return res.status(401).json({ error: "Unauthorized, user id or session id does not match token" });
+        }
+        let connection;
+        try {
+            connection = await getDbConnection();
+            const selectRes = await connection.execute(
+                `SELECT status FROM images 
+                 WHERE user_id = :user_id 
+                   AND session_id = :session_id 
+                   AND image_id = :image_id`,
+                { user_id, session_id, image_id }
+            );
+            if (!selectRes.rows || selectRes.rows.length === 0) {
+                return res.status(404).json({ error: "Image not found" });
+            }
+            const status = selectRes.rows[0][0];
+            if (status === "pending") {
+                return res.status(400).json({ error: "Please try again in some while or reupload the image" });
+            }
+            await connection.execute(
+                `UPDATE images SET status = 'completed' 
+                 WHERE user_id = :user_id AND status = 'active'`,
+                { user_id }
+            );
+            await connection.execute(
+                `UPDATE images SET status = 'active' 
+                 WHERE user_id = :user_id 
+                   AND session_id = :session_id 
+                   AND image_id = :image_id`,
+                { user_id, session_id, image_id }
+            );
+            const activeRes = await connection.execute(
+                `SELECT 1 FROM active WHERE user_id = :user_id`,
+                { user_id }
+            );
+            if (activeRes.rows && activeRes.rows.length > 0) {
+                await connection.execute(
+                    `UPDATE active 
+                     SET session_id = :session_id, image_id = :image_id 
+                     WHERE user_id = :user_id`,
+                    { session_id, image_id, user_id }
+                );
+            } else {
+                await connection.execute(
+                    `INSERT INTO active (user_id, session_id, image_id) 
+                     VALUES (:user_id, :session_id, :image_id)`,
+                    { user_id, session_id, image_id }
+                );
+            }
+            return res.json({ message: "Image set as active successfully" });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: `Failed to set active image: ${err.message}` });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeErr) {
+                    console.error("Error closing database connection:", closeErr);
+                }
+            }
+        }
+    });
     return router;
 };
 module.exports = imageRoutes;
