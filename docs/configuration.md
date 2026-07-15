@@ -14,6 +14,7 @@ Create a `.env` file in the project root. Below is a detailed description of all
 | :--- | :--- | :--- |
 | `PORT` | `9991` | The port the Express application server listens on. |
 | `JWT_SECRET` | *(Required)* | Secret key used to sign and verify JSON Web Tokens (JWT) for authentication. |
+| `CDN_URL` | *(Optional)* | Custom CDN domain (e.g. CloudFront) to serve images instead of direct S3 links. |
 
 ### Oracle Database Config
 
@@ -43,6 +44,7 @@ Make sure your database schema is initialized. You can find the SQL table struct
 - [users.sql](file:///Users/jay/Desktop/Personal%20Projects/onepfp/db/schema/users.sql)
 - [sessions.sql](file:///Users/jay/Desktop/Personal%20Projects/onepfp/db/schema/sessions.sql)
 - [images.sql](file:///Users/jay/Desktop/Personal%20Projects/onepfp/db/schema/images.sql)
+- [active.sql](file:///Users/jay/Desktop/Personal%20Projects/onepfp/db/schema/active.sql)
 
 ### 2. AWS Setup
 Ensure that your S3 bucket is configured to send `ObjectCreated` events to your SQS queue. For a step-by-step setup walkthrough, refer to the [AWS Event Setup Guide](file:///Users/jay/Desktop/Personal%20Projects/onepfp/docs/aws_guide.md).

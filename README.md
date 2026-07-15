@@ -12,12 +12,12 @@
 ## What's in there for you
 
 - **Single Source of Truth:** Set and update your profile picture once, ensuring a consistent look across all of your active locations.
-- **Blazing Fast & Secure Uploads:** Securely upload files directly to cloud storage (AWS S3).
-- **Ease of setup:** Uses AWS functionalities for image storage & queuing. simplifying architeture and reducing infrastructure cossts.
+- **Fast and Efficient Uploads:** Upload your images quickly and directly without lagging the main application servers.
+- **Seamless Integration:** Display your profile picture directly in any application using a simple, unified link.
 
 ## Features
 
-- **Direct-to-S3 Presigned Uploads & Automatic Sync:** Generates secure presigned S3 URLs allowing direct uploads to S3, which automatically trigger status synchronization across your user sessions.
+- **Instant Multi-Platform Avatar Synchronization:** Enables users to upload profile pictures and have their active avatars updated automatically across all connected locations.
 
 ## Quick Start Guide
 
@@ -38,8 +38,10 @@ npm run worker
 
 ### 3. Test the APIs
 Run the [Bruno](https://www.usebruno.com/) collection inside the `bruno/` directory:
-- **Signup / Login:** Authenticate and retrieve your JWT token.
-- **Get Presigned URL / Upload Image:** Obtain an upload URL and upload the image file.
+- **Signup / Login:** Authenticate and retrieve your session token.
+- **Upload Lifecycle:** Obtain an upload URL and upload your image file.
+- **Manage Avatars:** List your uploaded images and designate an active image.
+- **Public Fetch:** Fetch and render the active profile picture link directly.
 
 ---
 
