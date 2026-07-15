@@ -216,12 +216,9 @@ curl -X GET http://localhost:9991/images/testuser
 
 ### Responses
 
-#### Success (200 OK)
-```json
-{
-  "url": "https://onepfp-bkt.s3.ap-south-1.amazonaws.com/testuser/0072a13c81e726f485b2f461da0fbaad/test-avatar.jpg"
-}
-```
+#### Success (302 Found)
+Redirects the client browser directly to the public S3 key URL or custom CDN location.
+- **Header:** `Location: https://onepfp-bkt.s3.ap-south-1.amazonaws.com/testuser/session_id/test-avatar.jpg`
 
 #### Active Image Not Found (404 Not Found)
 ```json

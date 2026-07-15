@@ -39,8 +39,10 @@ const imageRoutes = (express) => {
             }
             const session_id = result.rows[0][0];
             const image_id = result.rows[0][1];
-            const url = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${user_id}/${session_id}/${image_id}`;
-            return res.json({ url });
+            const url = process.env.CDN_URL
+                ? `${process.env.CDN_URL}/${user_id}/${session_id}/${image_id}`
+                : `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${user_id}/${session_id}/${image_id}`;
+            return res.redirect(url);
         } catch (err) {
             console.error(err);
             return res.status(500).json({ error: `Failed to retrieve active image: ${err.message}` });
