@@ -175,6 +175,67 @@ S3 bucket region: ap-south-1
 SQS queue region: ap-south-1
 ```
 
+### Enable Public Read Access & CORS Configurations
+
+To allow profile pictures to be uploaded directly from the browser (CORS) and publicly readable via their S3 key URLs:
+
+1. **Disable "Block public access":**
+   - In S3, select your bucket.
+   - Go to the **Permissions** tab.
+   - Under **Block public access (bucket settings)**, click **Edit**.
+   - **Uncheck all blocks** (turn off Block all public access and all individual block public access settings):
+     - [ ] **Block all public access**
+     - [ ] **Block public access to buckets and objects granted through new access control lists (ACLs)**
+     - [ ] **Block public access to buckets and objects granted through any access control lists (ACLs)**
+     - [ ] **Block public access to buckets and objects granted through new public bucket or access point policies**
+     - [ ] **Block public and cross-account access to buckets and objects through any public bucket or access point policies**
+   - Click **Save changes**.
+
+2. **Add a Bucket Policy:**
+   - Scroll down to **Bucket policy** and click **Edit**.
+   - Paste the following policy:
+     ```json
+     {
+         "Version": "2012-10-17",
+         "Statement": [
+             {
+                 "Sid": "PublicReadGetObject",
+                 "Effect": "Allow",
+                 "Principal": "*",
+                 "Action": "s3:GetObject",
+                 "Resource": "arn:aws:s3:::onepfp-bkt/*"
+             }
+         ]
+     }
+     ```
+     *(Note: Replace `onepfp-bkt` with your actual bucket name.)*
+   - Click **Save changes**.
+
+3. **Configure CORS (Cross-Origin Resource Sharing):**
+   - Scroll to the bottom of the **Permissions** tab to the **Cross-origin resource sharing (CORS)** section and click **Edit**.
+   - Paste the following JSON rules array to allow PUT/POST file uploads from client applications:
+     ```json
+     [
+         {
+             "AllowedHeaders": [
+                 "*"
+             ],
+             "AllowedMethods": [
+                 "GET",
+                 "PUT",
+                 "POST",
+                 "HEAD"
+             ],
+             "AllowedOrigins": [
+                 "*"
+             ],
+             "ExposeHeaders": [],
+             "MaxAgeSeconds": 3000
+         }
+     ]
+     ```
+   - Click **Save changes**.
+
 ---
 
 ## 5. Add S3 Event Notification
