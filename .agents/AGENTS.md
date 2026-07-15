@@ -14,6 +14,7 @@
 ### 3. Authentication & Security
 * Passwords must be hashed during signup and verified during login using the helper functions in [utils/user.js](file:///Users/jay/Desktop/Personal%20Projects/onepfp/utils/user.js). These functions use Node's native `crypto.scrypt` hashing algorithm.
 * Authenticated sessions must utilize the JWT utility in [utils/jwt.js](file:///Users/jay/Desktop/Personal%20Projects/onepfp/utils/jwt.js) (which uses `jsonwebtoken` package) to sign and verify tokens.
+* Authenticated and session-specific endpoints must parse and verify the JWT token from the `Authorization: Bearer <token>` header, confirming that the token is valid and matches any corresponding parameters (such as `user_id` and `session_id`) passed in the request body.
 
 ### 4. API Testing
 * All endpoints must have corresponding request files (`.bru`) maintained inside the [bruno/](file:///Users/jay/Desktop/Personal%20Projects/onepfp/bruno) folder.
