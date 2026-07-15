@@ -3,7 +3,9 @@
 *A unified profile picture service that keeps your avatar synchronized everywhere.*
 
 ![Node.js Version](https://img.shields.io/badge/node.js-%3E%3D20.12-green.svg)
-![Database](https://img.shields.io/badge/database-Oracle_DB-red.svg)
+![Framework](https://img.shields.io/badge/framework-Express-black.svg)
+![Database](https://img.shields.io/badge/database-Oracle_21_XE-red.svg)
+![Storage](https://img.shields.io/badge/storage-AWS_S3-blueviolet.svg)
 ![Queue](https://img.shields.io/badge/queue-AWS_SQS-orange.svg)
 ![License](https://img.shields.io/badge/license-ISC-blue.svg)
 
