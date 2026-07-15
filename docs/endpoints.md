@@ -230,4 +230,45 @@ curl -X GET http://localhost:9991/images/testuser
 }
 ```
 
+---
+
+## 6. List User Images
+
+Retrieves all uploaded images (metadata and S3 URLs) for the authenticated user.
+
+- **Path:** `/images`
+- **Method:** `GET`
+- **Headers:**
+  - `Authorization: Bearer <JWT_TOKEN>`
+- **Content-Type:** `application/json`
+
+### Example Request
+
+```bash
+curl -X GET http://localhost:9991/images \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+### Responses
+
+#### Success (200 OK)
+```json
+[
+  {
+    "image_id": "test-avatar.jpg",
+    "session_id": "0072a13c81e726f485b2f461da0fbaad",
+    "status": "completed",
+    "url": "https://onepfp-bkt.s3.ap-south-1.amazonaws.com/testuser/0072a13c81e726f485b2f461da0fbaad/test-avatar.jpg"
+  }
+]
+```
+
+#### Unauthorized (401 Unauthorized)
+```json
+{
+  "error": "Unauthorized, token is required"
+}
+```
+
+
 

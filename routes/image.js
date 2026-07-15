@@ -55,6 +55,52 @@ const imageRoutes = (express) => {
         }
     });
     /**
+     * @brief GET endpoint to retrieve all images (metadata and URLs) for the authenticated user.
+     */
+    router.get("/", async (req, res) => {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: "Unauthorized, token is required" });
+        }
+        let decoded;
+        try {
+            decoded = jwtUtil.verifyToken(token);
+        } catch (err) {
+            return res.status(401).json({ error: "Unauthorized, invalid token" });
+        }
+        if (!decoded || !decoded.user_id) {
+            return res.status(401).json({ error: "Unauthorized, user invalid" });
+        }
+        const user_id = decoded.user_id;
+        let connection;
+        try {
+            connection = await getDbConnection();
+            const result = await connection.execute(
+                `SELECT image_id, session_id, status FROM images WHERE user_id = :user_id`,
+                { user_id }
+            );
+            const imageList = (result.rows || []).map(row => {
+                const image_id = row[0];
+                const session_id = row[1];
+                const status = row[2];
+                const url = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${user_id}/${session_id}/${image_id}`;
+                return { image_id, session_id, status, url };
+            });
+            return res.json(imageList);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: `Failed to retrieve images: ${err.message}` });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeErr) {
+                    console.error("Error closing database connection:", closeErr);
+                }
+            }
+        }
+    });
+    /**
      * @brief POST endpoint to obtain pre-signed S3 upload URL.
      */
     router.post("/upload", async (req, res) => {
