@@ -19,6 +19,42 @@ const imageRoutes = (express) => {
         return await getSignedUrl(s3Client, command, { expiresIn: process.env.AWS_S3_UPLOAD_WINDOW_SECONDS || 300 });
     }
     /**
+     * @breif GET endpoint which return the url to the active profile picture
+     * The url can be set to return the url pointing to the CDN or the S3 
+     */
+    router.get("/:user_id", async (req, res) => {
+        const { user_id } = req.params;
+        if (!user_id) {
+            return res.status(400).json({ error: "user_id is required" });
+        }
+        let connection;
+        try {
+            connection = await getDbConnection();
+            const result = await connection.execute(
+                `SELECT session_id, image_id FROM active WHERE user_id = :user_id`,
+                { user_id }
+            );
+            if (!result.rows || result.rows.length === 0) {
+                return res.status(404).json({ error: "Active profile picture not found" });
+            }
+            const session_id = result.rows[0][0];
+            const image_id = result.rows[0][1];
+            const url = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${user_id}/${session_id}/${image_id}`;
+            return res.json({ url });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: `Failed to retrieve active image: ${err.message}` });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeErr) {
+                    console.error("Error closing database connection:", closeErr);
+                }
+            }
+        }
+    });
+    /**
      * @brief POST endpoint to obtain pre-signed S3 upload URL.
      */
     router.post("/upload", async (req, res) => {
@@ -133,18 +169,6 @@ const imageRoutes = (express) => {
             if (status === "pending") {
                 return res.status(400).json({ error: "Please try again in some while or reupload the image" });
             }
-            await connection.execute(
-                `UPDATE images SET status = 'completed' 
-                 WHERE user_id = :user_id AND status = 'active'`,
-                { user_id }
-            );
-            await connection.execute(
-                `UPDATE images SET status = 'active' 
-                 WHERE user_id = :user_id 
-                   AND session_id = :session_id 
-                   AND image_id = :image_id`,
-                { user_id, session_id, image_id }
-            );
             const activeRes = await connection.execute(
                 `SELECT 1 FROM active WHERE user_id = :user_id`,
                 { user_id }

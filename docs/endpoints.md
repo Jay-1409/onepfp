@@ -147,7 +147,7 @@ curl -X POST http://localhost:9991/images/upload \
 
 ## 4. Set Active Image
 
-Sets a completed uploaded image as the active profile picture for a user session, updating the states in `images` and the `active` database tables.
+Sets a completed uploaded image as the active profile picture for a user session, updating the active profile picture mapping in the `active` database table.
 
 - **Path:** `/images/active`
 - **Method:** `POST`
@@ -191,4 +191,43 @@ curl -X POST http://localhost:9991/images/active \
   "error": "Image not found"
 }
 ```
+
+---
+
+## 5. Get Active Profile Image
+
+Retrieves the constructed public S3 object URL for a user's active profile picture.
+
+- **Path:** `/images/:user_id`
+- **Method:** `GET`
+- **Content-Type:** `application/json`
+
+### Parameters
+
+| Name | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | String | Yes | Path parameter identifying the user. |
+
+### Example Request
+
+```bash
+curl -X GET http://localhost:9991/images/testuser
+```
+
+### Responses
+
+#### Success (200 OK)
+```json
+{
+  "url": "https://onepfp-bkt.s3.ap-south-1.amazonaws.com/testuser/0072a13c81e726f485b2f461da0fbaad/test-avatar.jpg"
+}
+```
+
+#### Active Image Not Found (404 Not Found)
+```json
+{
+  "error": "Active profile picture not found"
+}
+```
+
 

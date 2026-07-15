@@ -15,6 +15,9 @@ headers {
 }
 
 body:file {
-  file: @file()
+  file: @file(/Users/jay/Desktop/jclouds.space/portfolio/public/profile.jpeg) @contentType(image/jpeg)
 }
 
+vars:pre-request {
+  presignedUrl: https://onepfp-bkt.s3.ap-south-1.amazonaws.com/testuser/7e27bac8fcc96da844ef1952db43340f/4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIATDIUEVWCHIBXHOT4%2F20260715%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20260715T112606Z&X-Amz-Expires=300&X-Amz-Signature=876d8f9b886b49b20eb39df2646a34f43abb56a175aa3c7d363488ddb25a904e&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject
+}
