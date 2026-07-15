@@ -21,36 +21,17 @@
 
 ## Quick Start Guide
 
-### 1. Setup Environment
-Create a `.env` file in the root directory. For detailed configuration variables, see the [Configuration & Setup Guide](file:///Users/jay/Desktop/Personal%20Projects/onepfp/docs/configuration.md).
-
-### 2. Run the App
-```bash
-# Install dependencies
-npm install
-
-# Start the API server
-node server.cjs
-
-# Start the background worker
-npm run worker
-```
-
-### 3. Test the APIs
-Run the [Bruno](https://www.usebruno.com/) collection inside the `bruno/` directory:
-- **Signup / Login:** Authenticate and retrieve your session token.
-- **Upload Lifecycle:** Obtain an upload URL and upload your image file.
-- **Manage Avatars:** List your uploaded images and designate an active image.
-- **Public Fetch:** Fetch and render the active profile picture link directly.
+To get the application up and running locally, please follow the detailed steps in the [Quick Start Guide](./docs/quickstart.md) (covers database schema scripts, server startup, background queue workers, and Bruno tests).
 
 ---
 
 ## Documentation Links
 
-- [System Architecture Guide](file:///Users/jay/Desktop/Personal%20Projects/onepfp/docs/architecture.md)
-- [API Endpoints Guide](file:///Users/jay/Desktop/Personal%20Projects/onepfp/docs/endpoints.md)
-- [Configuration & Setup Guide](file:///Users/jay/Desktop/Personal%20Projects/onepfp/docs/configuration.md)
-- [AWS S3 and SQS Event Notification Setup Guide](file:///Users/jay/Desktop/Personal%20Projects/onepfp/docs/aws_guide.md)
+- [Quick Start Guide](./docs/quickstart.md)
+- [System Architecture Guide](./docs/architecture.md)
+- [API Endpoints Guide](./docs/endpoints.md)
+- [Configuration & Setup Guide](./docs/configuration.md)
+- [AWS S3 and SQS Event Notification Setup Guide](./docs/aws_guide.md)
 
 ## License
 

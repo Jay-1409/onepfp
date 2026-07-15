@@ -4,7 +4,9 @@ This document outlines the core architecture, data flow, and design principles b
 
 ## Core Components
 
-```text
+![System Architecture Diagram](./whiteboard.svg)
+
+<!-- ```text
   ┌──────────────┐
   │  Client App  │◄─────────────┐
   └──────┬───────┘              │
@@ -24,7 +26,7 @@ This document outlines the core architecture, data flow, and design principles b
                          │ Background   │
                          │    Worker    │
                          └──────────────┘
-```
+``` -->
 
 1. **Express API Server (`server.cjs` / `routes/`):**
    - Handles client registration, login, JWT token issuance, and session generation.
@@ -54,4 +56,4 @@ This document outlines the core architecture, data flow, and design principles b
 
 ## Design Artifacts
 
-- [Interactive Whiteboard Diagram (Excalidraw)](file:///Users/jay/Desktop/Personal%20Projects/onepfp/whiteboard.excalidraw)
+- [Interactive Whiteboard Diagram (Excalidraw)](../whiteboard.excalidraw)
