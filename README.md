@@ -12,8 +12,8 @@
 ## What's in there for you
 
 - **Single Source of Truth:** Set and update your profile picture once, ensuring a consistent look across all of your active locations.
-- **Blazing Fast Uploads:** Securely upload files directly to cloud storage without sending heavy traffic through application servers.
-- **Always Up to Date:** Real-time background sync updates your image processing status instantly.
+- **Blazing Fast & Secure Uploads:** Securely upload files directly to cloud storage (AWS S3).
+- **Ease of setup:** Uses AWS functionalities for image storage & queuing. simplifying architeture and reducing infrastructure cossts.
 
 ## Features
 
