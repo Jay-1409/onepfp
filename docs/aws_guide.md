@@ -51,7 +51,7 @@ AWS notes verified against the Amazon S3 documentation:
 Pick these values first so every policy uses the same names:
 
 ```text
-AWS account ID: 123456789012
+AWS account ID: <ACCOUNT_ID>
 AWS region: ap-south-1
 S3 bucket name: onepfp-bkt
 SQS queue name: onepfp-upload-events

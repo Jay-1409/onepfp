@@ -25,12 +25,14 @@ Client
   -> Worker consumes the SQS event and marks the image completed
   -> API redirects /images/:user_id to the active S3 or CDN URL
 ```
+> Note: Currently CDN support is not availiable.
 
 The S3 object key used by the app is:
 
 ```text
 {user_id}/{session_id}/{image_id}
 ```
+> This key helps us uniquely identify a image in the bucket 
 
 Keep AWS event notification prefixes aligned with that key format.
 
