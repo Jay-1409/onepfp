@@ -60,4 +60,4 @@ Start with the [Quick Start Guide](./docs/quickstart.md). It walks through the e
 
 ## License
 
-Distributed under the ISC License. See `package.json` for details.
+Distributed under the Apache-2.0 License. See `package.json` for details.
